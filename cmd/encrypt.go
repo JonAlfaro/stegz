@@ -37,6 +37,10 @@ var encryptCMD = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		pass := args[0]
+		inFile, _ := os.Open("dog.png")   // opening file
+		reader := bufio.NewReader(inFile) // buffer reader
+		img, _ := png.Decode(reader)
+		defer inFile.Close()
 		err := filepath.Walk(".",
 			func(path string, info os.FileInfo, err error) error {
 
@@ -52,11 +56,6 @@ var encryptCMD = &cobra.Command{
 
 					enFile := encrypt(pFile, pass)
 
-					inFile, _ := os.Open("dog.png")   // opening file
-					reader := bufio.NewReader(inFile) // buffer reader
-					img, _ := png.Decode(reader)
-					defer inFile.Close()
-
 					w := new(bytes.Buffer)                     // buffer that will recieve the results
 					err = steganography.Encode(w, img, enFile) // Encode the message into the image
 					if err != nil {
@@ -66,7 +65,6 @@ var encryptCMD = &cobra.Command{
 
 					outFile, _ := os.Create(path) // create file
 					defer outFile.Close()
-
 					w.WriteTo(outFile) // write buffer to it
 
 				}
