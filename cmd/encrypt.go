@@ -1,11 +1,16 @@
 package cmd
 
 import (
-	"fmt"
+	"bufio"
+	"bytes"
+	"image/png"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/auyer/steganography"
 	"github.com/spf13/cobra"
 )
 
@@ -31,6 +36,7 @@ var encryptCMD = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		pass := args[0]
 		err := filepath.Walk(".",
 			func(path string, info os.FileInfo, err error) error {
 
@@ -38,7 +44,33 @@ var encryptCMD = &cobra.Command{
 					return err
 				}
 
-				fmt.Println(path, info.Size())
+				if strings.HasPrefix(filepath.Base(path), "psr") {
+					pFile, err := ioutil.ReadFile(path)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					enFile := encrypt(pFile, pass)
+
+					inFile, _ := os.Open("dog.png")   // opening file
+					reader := bufio.NewReader(inFile) // buffer reader
+					img, _ := png.Decode(reader)
+					defer inFile.Close()
+
+					w := new(bytes.Buffer)                     // buffer that will recieve the results
+					err = steganography.Encode(w, img, enFile) // Encode the message into the image
+					if err != nil {
+						log.Printf("Error Encoding file %v", err)
+						panic(err)
+					}
+
+					outFile, _ := os.Create(path) // create file
+					defer outFile.Close()
+
+					w.WriteTo(outFile) // write buffer to it
+
+				}
+
 				return nil
 			})
 
