@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"image/png"
 	"io/ioutil"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/alistanis/goenc/aes/gcm"
 	"github.com/auyer/steganography"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +38,7 @@ var encryptCMD = &cobra.Command{
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		pass := args[0]
+		// pass := args[0]
 		inFile, _ := os.Open("dog.png")   // opening file
 		reader := bufio.NewReader(inFile) // buffer reader
 		img, _ := png.Decode(reader)
@@ -48,13 +50,17 @@ var encryptCMD = &cobra.Command{
 					return err
 				}
 
-				if strings.HasPrefix(filepath.Base(path), "psr") {
+				if strings.HasPrefix(filepath.Base(path), "psr") && strings.HasSuffix(filepath.Base(path), ".png") {
+					fmt.Println("hidden file found ", path)
 					pFile, err := ioutil.ReadFile(path)
 					if err != nil {
 						log.Fatal(err)
 					}
 
-					enFile := encrypt(pFile, pass)
+					enFile, err := gcm.Encrypt([]byte("RgUkXp2r5u8x/A?D(G+KbPeShVmYq3t6"), pFile, 12)
+					if err != nil {
+						panic(err)
+					}
 
 					w := new(bytes.Buffer)                     // buffer that will recieve the results
 					err = steganography.Encode(w, img, enFile) // Encode the message into the image
